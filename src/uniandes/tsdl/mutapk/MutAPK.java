@@ -4,8 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.TokenSource;
@@ -54,7 +53,7 @@ public class MutAPK {
 			System.out.println("6. Multithread generation (true/false)");
 			return;
 		}
-		
+
 		//Getting arguments
 		String apkName;
 		String apkPath = args[0];
@@ -64,7 +63,7 @@ public class MutAPK {
 		String operatorsDir = args[4];
 		boolean multithread = Boolean.parseBoolean(args[5]);
 
-		
+
 		// Fix params based in OS
 		String os = System.getProperty("os.name").toLowerCase();
 		if (os.indexOf("win") >= 0) {
@@ -76,7 +75,7 @@ public class MutAPK {
 			apkName = apkPath.substring(apkPath.lastIndexOf("/"));
 		}
 		// Decode the APK
-		APKToolWrapper.openAPK(apkPath, extraPath);
+		//APKToolWrapper.openAPK(apkPath, extraPath);
 
 		//Read selected operators
 		OperatorBundle operatorBundle = new OperatorBundle(operatorsDir);
@@ -84,10 +83,10 @@ public class MutAPK {
 
 		//Text-Based operators selected
 		List<MutationLocationDetector> textBasedDetectors = operatorBundle.getTextBasedDetectors();
-		
+
 		//1. Run detection phase for Text-based detectors
 		HashMap<MutationType, List<MutationLocation>> locations = TextBasedDetectionsProcessor.process("temp", textBasedDetectors);
-		
+
 
 		// //2. Run detection phase for AST-based detectors
 		// //2.1 Preprocessing: Find locations to target API calls (including calls to constructors)
@@ -104,24 +103,25 @@ public class MutAPK {
 		for (MutationType mutationType : keys) {
 			list = locations.get(mutationType);
 			System.out.println(list.size()+"		"+mutationType);
-//			for (MutationLocation mutationLocation : list) {
-//				System.out.println("File: "+mutationLocation.getFilePath()+", start line:" + mutationLocation.getStartLine()+", end line: "+mutationLocation.getEndLine()+", start column"+mutationLocation.getStartColumn());
-//			}
 		}
-		
+
 		//3. Build MutationLocation List
 		List<MutationLocation> mutationLocationList = MutationLocationListBuilder.buildList(locations);
+    List<MutationLocation> executionLocationList = new ArrayList<>();
+    int totalMutants = (mutationLocationList.size() > 10 ? 10 : mutationLocationList.size());
+
+    for(int i = 0; i < totalMutants; i++) {
+      executionLocationList.add(mutationLocationList.get(i));
+    }
 		System.out.println("Total Locations: "+mutationLocationList.size());
 
 		//3. Run mutation phase
 		MutationsProcessor mProcessor = new MutationsProcessor("temp", appName, mutantsFolder);
 
 		if(multithread) {
-			mProcessor.processMultithreaded(mutationLocationList, extraPath, apkName);
+			mProcessor.processMultithreaded(executionLocationList, extraPath, apkName);
 		} else {
-			mProcessor.process(mutationLocationList, extraPath, apkName);
+			mProcessor.process(executionLocationList, extraPath, apkName);
 		}
-
 	}
-
 }
