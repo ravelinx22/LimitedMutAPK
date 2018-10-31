@@ -75,7 +75,7 @@ public class MutAPK {
 			apkName = apkPath.substring(apkPath.lastIndexOf("/"));
 		}
 		// Decode the APK
-		//APKToolWrapper.openAPK(apkPath, extraPath);
+		APKToolWrapper.openAPK(apkPath, extraPath);
 
 		//Read selected operators
 		OperatorBundle operatorBundle = new OperatorBundle(operatorsDir);
